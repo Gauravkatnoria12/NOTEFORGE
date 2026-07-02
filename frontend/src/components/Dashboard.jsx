@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Plus, Trash2, LogOut, CheckSquare, Folder, Star, Search, FileText, Tag, Layers, NotepadText } from 'lucide-react'
+import { Plus, Trash2, LogOut, CheckSquare, Folder, Star, Search, FileText, Tag, Layers, NotepadText, Menu, X } from 'lucide-react'
 import Editor from './Editor'
 import TodosWorkspace from './TodosWorkspace'
 import { gsap } from 'gsap'
@@ -14,6 +14,9 @@ export default function Dashboard({ user, onLogout }) {
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState(null)
+
+  // Mobile sidebar toggle
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const sidebarRef = useRef(null)
   const mainContentRef = useRef(null)
@@ -132,8 +135,9 @@ export default function Dashboard({ user, onLogout }) {
 
   // Handle links clicking to jump to a specific note
   const handleNoteNavigation = (noteId) => {
-    setActiveNoteId(noteId)
     setWorkspaceMode('notes')
+    setActiveNoteId(noteId)
+    setSidebarOpen(false) // auto-close sidebar on mobile
   }
 
   // Get active note model
@@ -159,12 +163,33 @@ export default function Dashboard({ user, onLogout }) {
   })
 
   return (
-    <div className="h-screen w-full flex bg-white dark:bg-[#191919] text-black dark:text-white font-sans overflow-hidden">
+    <div className="h-screen w-full flex bg-white dark:bg-[#191919] text-black dark:text-white font-sans overflow-hidden relative">
       
+      {/* Mobile hamburger button */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-neutral-100/80 dark:bg-neutral-800/80 backdrop-blur border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer shadow-sm"
+          aria-label="Open sidebar"
+        >
+          <Menu size={18} />
+        </button>
+      )}
+
+      {/* Mobile backdrop overlay */}
+      {sidebarOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Navigation */}
       <aside 
         ref={sidebarRef} 
-        className="w-64 md:w-72 border-r border-neutral-100 dark:border-neutral-800 flex flex-col justify-between bg-neutral-50/50 dark:bg-neutral-900/50 backdrop-blur flex-shrink-0 select-none"
+        className={`fixed md:relative z-50 md:z-auto h-full w-72 border-r border-neutral-100 dark:border-neutral-800 flex flex-col justify-between bg-neutral-50 dark:bg-neutral-900 backdrop-blur flex-shrink-0 select-none transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
       >
         {/* Workspace Brand Header */}
         <div className="p-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -182,13 +207,23 @@ export default function Dashboard({ user, onLogout }) {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleLogOutSubmit}
-              title="Logout"
-              className="p-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
-            >
-              <LogOut size={15} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleLogOutSubmit}
+                title="Logout"
+                className="p-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <LogOut size={15} />
+              </button>
+              {/* Mobile close button */}
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="md:hidden p-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+                aria-label="Close sidebar"
+              >
+                <X size={15} />
+              </button>
+            </div>
           </div>
         </div>
 

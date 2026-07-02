@@ -447,7 +447,7 @@ export default function TodosWorkspace({ activeNoteId }) {
   return (
     <div className="h-full flex flex-col overflow-hidden relative bg-white dark:bg-[#191919]">
       {/* Pinned Top Header Bar */}
-      <div className="px-6 md:px-16 pt-8 pb-5 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-[#191919] flex-shrink-0 z-20 space-y-6">
+      <div className="pl-14 md:pl-16 pr-4 md:pr-16 pt-6 md:pt-8 pb-5 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-[#191919] flex-shrink-0 z-20 space-y-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-black dark:text-white mb-2">
             Todo Workspace
@@ -616,7 +616,7 @@ export default function TodosWorkspace({ activeNoteId }) {
       </div>
 
       {/* Scrollable Grouped Todos Layout */}
-      <div className="flex-1 overflow-y-auto px-6 md:px-16 py-8">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-16 py-6 md:py-8">
         {loading && todos.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-12">
             <div className="w-8 h-8 border-2 border-neutral-300 border-t-black dark:border-neutral-700 dark:border-t-white rounded-full animate-spin"></div>

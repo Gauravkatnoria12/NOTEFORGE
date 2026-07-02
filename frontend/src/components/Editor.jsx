@@ -563,10 +563,10 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
     <div className={`h-full flex flex-col relative bg-white dark:bg-[#191919] overflow-hidden ${getFontClass()}`}>
       
       {/* Editor Header / Toolbars */}
-      <div className="border-b border-neutral-100 dark:border-neutral-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 glass z-20">
+      <div className="border-b border-neutral-100 dark:border-neutral-800 pl-14 md:pl-6 pr-4 md:pr-6 py-3 md:py-4 flex flex-wrap items-center justify-between gap-3 md:gap-4 glass z-20">
         
         {/* Toggle Mode and Font Picker */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {/* Edit / Preview Tabs */}
           <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 text-xs">
             <button
@@ -585,8 +585,8 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
             </button>
           </div>
 
-          {/* Font Selector */}
-          <div className="flex border border-neutral-100 dark:border-neutral-800 rounded-lg p-1 text-xs">
+          {/* Font Selector — hidden on small screens */}
+          <div className="hidden sm:flex border border-neutral-100 dark:border-neutral-800 rounded-lg p-1 text-xs">
             {['sans', 'serif', 'mono'].map((f) => (
               <button
                 key={f}
@@ -605,12 +605,12 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
           className="px-3.5 py-1.5 rounded-lg bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm flex-shrink-0"
         >
           <span className="text-[13px] leading-none select-none">✦</span>
-          <span>AI Assistant</span>
+          <span className="hidden sm:inline">AI Assistant</span>
         </button>
       </div>
 
       {/* Editor Body */}
-      <div className="flex-1 overflow-y-auto px-6 md:px-16 py-8 flex flex-col">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-16 py-6 md:py-8 flex flex-col">
         {/* Top Metadata: Starred toggle & Emoji selector */}
         <div className="flex items-center justify-between gap-4 mb-4 select-none">
           <div className="relative">

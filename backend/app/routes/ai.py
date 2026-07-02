@@ -1,9 +1,8 @@
-import google.generativeai as genai
+from google import genai
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List
 import json
-import asyncio
 from app.config import settings
 from app.utils.auth import get_current_user
 
@@ -15,9 +14,12 @@ class AIContentRequest(BaseModel):
 class AITodoRequest(BaseModel):
     todo_text: str
 
-# Config Gemini client if key is present
-if settings.GEMINI_API_KEY:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
+# Initialize the new genai Client if key is present
+_client = None
+if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "your_gemini_api_key_here":
+    _client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+MODEL = "gemini-2.5-flash"
 
 @router.post("/fix-grammar")
 async def fix_grammar(payload: AIContentRequest, user: dict = Depends(get_current_user)):
@@ -25,13 +27,12 @@ async def fix_grammar(payload: AIContentRequest, user: dict = Depends(get_curren
     if not payload.content.strip():
         return {"improved_content": ""}
         
-    if not settings.GEMINI_API_KEY or settings.GEMINI_API_KEY == "your_gemini_api_key_here":
+    if not _client:
         return {
             "improved_content": f"[Mock Fix Grammar]: {payload.content}\n\n(Note: Set GEMINI_API_KEY to enable live AI grammar check)"
         }
         
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
         prompt = (
             "You are an expert editor. Fix any grammatical mistakes, typos, spelling errors, "
             "and punctuation issues in the following text. Preserve the original paragraph structure, "
@@ -39,7 +40,9 @@ async def fix_grammar(payload: AIContentRequest, user: dict = Depends(get_curren
             "Do not add any conversational text, notes, or wrap the output in quotes:\n\n"
             f"{payload.content}"
         )
-        response = await asyncio.to_thread(model.generate_content, prompt)
+        response = await _client.aio.models.generate_content(
+            model=MODEL, contents=prompt
+        )
         return {"improved_content": response.text.strip()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gemini API error: {str(e)}")
@@ -50,21 +53,22 @@ async def generate_title(payload: AIContentRequest, user: dict = Depends(get_cur
     if not payload.content.strip():
         return {"title": "Untitled Note"}
         
-    if not settings.GEMINI_API_KEY or settings.GEMINI_API_KEY == "your_gemini_api_key_here":
+    if not _client:
         # Extract first 3 words as a fallback mock
         words = payload.content.split()[:3]
         fallback_title = " ".join(words) if words else "Untitled Page"
         return {"title": f"[Mock] {fallback_title}"}
         
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
         prompt = (
             "Based on the following note content, generate a short, punchy, minimalist title. "
             "The title should be between 2 to 5 words long. Return ONLY the title text itself without "
             "any quotation marks, markdown formatting, or prefixes. Do not explain anything:\n\n"
             f"{payload.content}"
         )
-        response = await asyncio.to_thread(model.generate_content, prompt)
+        response = await _client.aio.models.generate_content(
+            model=MODEL, contents=prompt
+        )
         return {"title": response.text.strip().strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gemini API error: {str(e)}")
@@ -75,13 +79,12 @@ async def improve_content(payload: AIContentRequest, user: dict = Depends(get_cu
     if not payload.content.strip():
         return {"improved_content": ""}
         
-    if not settings.GEMINI_API_KEY or settings.GEMINI_API_KEY == "your_gemini_api_key_here":
+    if not _client:
         return {
             "improved_content": f"{payload.content}\n\n[Improved: Make sure to set your GEMINI_API_KEY to see live phrasing enhancements!]"
         }
         
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
         prompt = (
             "You are a professional creative writer. Improve the style, vocabulary, clarity, "
             "and eloquence of the following note content. Preserve the original message, list elements, "
@@ -89,7 +92,9 @@ async def improve_content(payload: AIContentRequest, user: dict = Depends(get_cu
             "Do not add any greetings, comments, or explanations:\n\n"
             f"{payload.content}"
         )
-        response = await asyncio.to_thread(model.generate_content, prompt)
+        response = await _client.aio.models.generate_content(
+            model=MODEL, contents=prompt
+        )
         return {"improved_content": response.text.strip()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gemini API error: {str(e)}")
@@ -100,7 +105,7 @@ async def todo_subtasks(payload: AITodoRequest, user: dict = Depends(get_current
     if not payload.todo_text.strip():
         return {"subtasks": []}
         
-    if not settings.GEMINI_API_KEY or settings.GEMINI_API_KEY == "your_gemini_api_key_here":
+    if not _client:
         return {
             "subtasks": [
                 f"Verify requirements for '{payload.todo_text}'",
@@ -110,7 +115,6 @@ async def todo_subtasks(payload: AITodoRequest, user: dict = Depends(get_current
         }
         
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
         prompt = (
             "You are a productivity expert. Break down the following task into 3 to 5 logical, concrete, "
             "and actionable subtask steps. Return the subtask list strictly as a JSON array of strings, "
@@ -119,7 +123,9 @@ async def todo_subtasks(payload: AITodoRequest, user: dict = Depends(get_current
             "Do not wrap the response in markdown code blocks or backticks. Return only valid JSON. Do not include any filler text:\n\n"
             f"Task: {payload.todo_text}"
         )
-        response = await asyncio.to_thread(model.generate_content, prompt)
+        response = await _client.aio.models.generate_content(
+            model=MODEL, contents=prompt
+        )
         
         text = response.text.strip()
         # Sanitize JSON string if markdown wraps it

@@ -37,7 +37,7 @@ export default function App() {
       <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#191919] select-none">
         {/* Minimalist Notion logo spinner */}
         <div className="w-12 h-12 border-2 border-neutral-300 border-t-black dark:border-neutral-700 dark:border-t-white rounded-full animate-spin"></div>
-        <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono mt-4">Loading Workspace...</p>
+        <p className="text-xs text-neutral-400 dark:text-neutral-500 font-sans font-medium tracking-wide mt-4">Loading Workspace...</p>
       </div>
     )
   }
