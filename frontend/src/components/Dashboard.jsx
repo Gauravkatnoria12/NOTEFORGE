@@ -28,7 +28,7 @@ export default function Dashboard({ user, onLogout }) {
     gsap.fromTo(
       sidebarRef.current,
       { x: -60, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }
+      { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out', clearProps: 'transform,opacity' }
     )
   }, [])
 

@@ -437,7 +437,7 @@ export default function TodosWorkspace({ activeNoteId }) {
         <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 pl-1">
           {title} ({items.length})
         </h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {items.map(renderTodoCard)}
         </div>
       </div>
@@ -460,7 +460,7 @@ export default function TodosWorkspace({ activeNoteId }) {
         {/* Add Task Form Bar */}
         <form 
           onSubmit={handleAddTodo}
-          className="w-full border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-900/30 backdrop-blur flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          className="w-full border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 sm:p-4 bg-neutral-50/50 dark:bg-neutral-900/30 backdrop-blur flex flex-col gap-3 sm:gap-4"
         >
         <div className="flex-1">
           <input
@@ -473,7 +473,7 @@ export default function TodosWorkspace({ activeNoteId }) {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Due Date Picker */}
           <div className="relative">
             <button
@@ -489,7 +489,7 @@ export default function TodosWorkspace({ activeNoteId }) {
             </button>
             
             {showDatePicker && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 glass">
+              <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 glass">
                 <button
                   type="button"
                   onClick={() => { setDueDate(''); setShowDatePicker(false); }}
@@ -552,7 +552,7 @@ export default function TodosWorkspace({ activeNoteId }) {
             </button>
 
             {showTimePicker && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 glass">
+              <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 glass">
                 <button
                   type="button"
                   onClick={() => { setDueTime(''); setShowTimePicker(false); }}
@@ -606,7 +606,7 @@ export default function TodosWorkspace({ activeNoteId }) {
           <button
             type="submit"
             disabled={submitting || !text.trim()}
-            className="px-5 py-2.5 rounded-lg bg-[#0071e3] hover:bg-[#0077ed] text-white font-semibold text-xs transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer flex-shrink-0 border border-[#0071e3]"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#0071e3] hover:bg-[#0077ed] text-white font-semibold text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0 border border-[#0071e3]"
           >
             <Plus size={14} />
             <span>Add Task</span>
