@@ -447,7 +447,7 @@ export default function TodosWorkspace({ activeNoteId }) {
   return (
     <div className="h-full flex flex-col overflow-hidden relative bg-white dark:bg-[#191919]">
       {/* Pinned Top Header Bar */}
-      <div className="pl-14 md:pl-16 pr-4 md:pr-16 pt-6 md:pt-8 pb-5 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-[#191919] flex-shrink-0 z-20 space-y-6">
+      <div className="pl-4 mt-16 md:mt-0 md:pl-16 pr-4 md:pr-16 pt-6 md:pt-8 pb-5 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-[#191919] flex-shrink-0 z-20 space-y-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-black dark:text-white mb-2">
             Todo Workspace

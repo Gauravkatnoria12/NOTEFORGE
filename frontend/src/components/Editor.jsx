@@ -563,7 +563,7 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
     <div className={`h-full flex flex-col relative bg-white dark:bg-[#191919] overflow-hidden ${getFontClass()}`}>
       
       {/* Editor Header / Toolbars */}
-      <div className="border-b border-neutral-100 dark:border-neutral-800 pl-14 md:pl-6 pr-4 md:pr-6 py-3 md:py-4 flex flex-wrap items-center justify-between gap-3 md:gap-4 glass z-20">
+      <div className="h-18.5 border-b border-neutral-100 dark:border-neutral-800 pl-14 md:pl-6 pr-4 md:pr-6 py-3 md:py-4 flex flex-wrap items-center justify-between gap-3 md:gap-4 glass z-20">
         
         {/* Toggle Mode and Font Picker */}
         <div className="flex items-center gap-2 md:gap-4">

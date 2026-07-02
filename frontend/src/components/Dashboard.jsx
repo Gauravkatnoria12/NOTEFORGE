@@ -169,7 +169,7 @@ export default function Dashboard({ user, onLogout }) {
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-neutral-100/80 dark:bg-neutral-800/80 backdrop-blur border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer shadow-sm"
+          className="md:hidden fixed top-5 left-4 z-50 p-2 rounded-lg bg-neutral-100/80 dark:bg-neutral-800/80 backdrop-blur border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer shadow-sm"
           aria-label="Open sidebar"
         >
           <Menu size={18} />
@@ -192,7 +192,7 @@ export default function Dashboard({ user, onLogout }) {
         }`}
       >
         {/* Workspace Brand Header */}
-        <div className="p-4 border-b border-neutral-100 dark:border-neutral-800">
+        <div className="h-18.5 p-4 border-b border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img 
