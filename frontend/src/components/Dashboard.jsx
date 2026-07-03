@@ -151,10 +151,8 @@ export default function Dashboard({ user, onLogout }) {
     new Set(notes.reduce((acc, note) => [...acc, ...(note.tags || [])], []))
   )
 
-  // Filter notes based on sidebar search query and selected tag (excluding starred notes)
+  // Filter notes based on sidebar search query and selected tag
   const filteredNotes = notes.filter((note) => {
-    if (note.is_starred) return false
-
     const matchesSearch = 
       (note.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (note.content || '').toLowerCase().includes(searchQuery.toLowerCase())
