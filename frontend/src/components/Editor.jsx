@@ -274,6 +274,50 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Ref to hold all current values for the tab-close handler
+  const unloadValuesRef = useRef({ title, content, emoji, fontFamily, isStarred, tags, activeNote })
+  useEffect(() => {
+    unloadValuesRef.current = { title, content, emoji, fontFamily, isStarred, tags, activeNote }
+  })
+
+  // Tab closing / page exit auto-save handler
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const vals = unloadValuesRef.current
+      if (!vals.activeNote) return
+
+      const unsaved =
+        vals.title !== (vals.activeNote.title || '') ||
+        vals.content !== (vals.activeNote.content || '') ||
+        vals.emoji !== (vals.activeNote.emoji || '📝') ||
+        vals.fontFamily !== (vals.activeNote.font_family || 'sans') ||
+        vals.isStarred !== (vals.activeNote.is_starred || false) ||
+        JSON.stringify(vals.tags) !== JSON.stringify(vals.activeNote.tags || [])
+
+      if (unsaved) {
+        const payload = {
+          title: vals.title,
+          content: vals.content,
+          emoji: vals.emoji,
+          font_family: vals.fontFamily,
+          is_starred: vals.isStarred,
+          tags: vals.tags
+        }
+
+        // Trigger keepalive fetch request to ensure completion after page destruction
+        fetch(`/api/notes/${vals.activeNote.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true
+        })
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
+
 
 
   const getFontClass = () => {
