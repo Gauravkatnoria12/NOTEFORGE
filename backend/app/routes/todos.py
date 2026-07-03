@@ -19,6 +19,7 @@ class TodoSchema(BaseModel):
     due_date: Optional[str] = None
     due_time: Optional[str] = None
     subtasks: List[SubtaskSchema] = []
+    is_starred: bool = False
 
 class TodoResponse(BaseModel):
     id: str
@@ -30,6 +31,7 @@ class TodoResponse(BaseModel):
     subtasks: List[SubtaskSchema]
     created_at: datetime
     updated_at: datetime
+    is_starred: bool = False
 
 def serialize_todo(todo) -> dict:
     # Ensure nested subtasks list is properly mapped as dictionaries
@@ -47,7 +49,8 @@ def serialize_todo(todo) -> dict:
         "due_time": todo.get("due_time"),
         "subtasks": serialized_subtasks,
         "created_at": todo.get("created_at"),
-        "updated_at": todo.get("updated_at")
+        "updated_at": todo.get("updated_at"),
+        "is_starred": todo.get("is_starred", False)
     }
 
 @router.get("", response_model=List[TodoResponse])
@@ -65,6 +68,7 @@ async def create_todo(payload: TodoSchema, user: dict = Depends(get_current_user
         "due_date": payload.due_date,
         "due_time": payload.due_time,
         "subtasks": [s.model_dump() for s in payload.subtasks],
+        "is_starred": payload.is_starred,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc)
     }
@@ -84,6 +88,7 @@ async def update_todo(todo_id: str, payload: TodoSchema, user: dict = Depends(ge
         "due_date": payload.due_date,
         "due_time": payload.due_time,
         "subtasks": [s.model_dump() for s in payload.subtasks],
+        "is_starred": payload.is_starred,
         "updated_at": datetime.now(timezone.utc)
     }
     

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Trash2, Calendar, Clock, ChevronDown, ChevronRight, Check, ListChecks } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Plus, Trash2, Calendar, Clock, ChevronDown, ChevronRight, Check, ListChecks, Star } from 'lucide-react'
 import confetti from 'canvas-confetti'
 
 export default function TodosWorkspace({ activeNoteId }) {
@@ -23,6 +23,23 @@ export default function TodosWorkspace({ activeNoteId }) {
   // Custom date/time picker dropdown state
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
+
+  const datePickerRef = useRef(null)
+  const timePickerRef = useRef(null)
+
+  // Auto-close scheduler popovers on clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowDatePicker(false)
+      }
+      if (timePickerRef.current && !timePickerRef.current.contains(event.target)) {
+        setShowTimePicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     fetchTodos()
@@ -58,7 +75,8 @@ export default function TodosWorkspace({ activeNoteId }) {
           note_id: activeNoteId,
           due_date: dueDate || null,
           due_time: dueTime || null,
-          subtasks: []
+          subtasks: [],
+          is_starred: false
         })
       })
       const data = await res.json()
@@ -110,6 +128,25 @@ export default function TodosWorkspace({ activeNoteId }) {
       const res = await fetch(`/api/todos/${id}`, { method: 'DELETE' })
       if (res.ok) {
         setTodos(todos.filter((t) => t.id !== id))
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleToggleStar = async (todo) => {
+    try {
+      const res = await fetch(`/api/todos/${todo.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...todo,
+          is_starred: !todo.is_starred
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setTodos(todos.map((t) => (t.id === todo.id ? data : t)))
       }
     } catch (e) {
       console.error(e)
@@ -243,6 +280,7 @@ export default function TodosWorkspace({ activeNoteId }) {
     const today = getTodayStr()
     const tomorrow = getTomorrowStr()
 
+    const starred = []
     const overdue = []
     const dueToday = []
     const dueTomorrow = []
@@ -250,8 +288,13 @@ export default function TodosWorkspace({ activeNoteId }) {
     const noDate = []
 
     todos.forEach((todo) => {
+      if (todo.is_starred) {
+        starred.push(todo)
+        return
+      }
+
       if (todo.completed) {
-        noDate.push(todo) // Render completed separately or inside noDate
+        noDate.push(todo)
         return
       }
 
@@ -268,10 +311,11 @@ export default function TodosWorkspace({ activeNoteId }) {
       }
     })
 
-    // Sort completed tasks to the bottom of the "No Date" list
+    // Sort completed tasks to the bottom of lists
     noDate.sort((a, b) => a.completed - b.completed)
+    starred.sort((a, b) => a.completed - b.completed)
 
-    return { overdue, dueToday, dueTomorrow, upcoming, noDate }
+    return { starred, overdue, dueToday, dueTomorrow, upcoming, noDate }
   }
 
   const groups = getGroupedTodos()
@@ -334,6 +378,21 @@ export default function TodosWorkspace({ activeNoteId }) {
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Star Toggle */}
+            <button
+              onClick={() => handleToggleStar(todo)}
+              title={todo.is_starred ? "Unstar Task" : "Star Task"}
+              className="p-1.5 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+            >
+              <Star 
+                size={13} 
+                className={todo.is_starred 
+                  ? "text-[#00a2b1] fill-[#00a2b1] dark:text-[#64d2ff] dark:fill-[#64d2ff]" 
+                  : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-400"
+                } 
+              />
+            </button>
+
             {/* AI Subtask Generator */}
             <button
               onClick={() => handleGenerateSubtasks(todo)}
@@ -475,7 +534,7 @@ export default function TodosWorkspace({ activeNoteId }) {
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Due Date Picker */}
-          <div className="relative">
+          <div ref={datePickerRef} className="relative">
             <button
               type="button"
               onClick={() => {
@@ -489,7 +548,7 @@ export default function TodosWorkspace({ activeNoteId }) {
             </button>
             
             {showDatePicker && (
-              <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 glass">
+              <div className="absolute left-0 mt-2 w-48 bg-white/80 dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-lg shadow-xl py-1.5 z-50 backdrop-blur-xl">
                 <button
                   type="button"
                   onClick={() => { setDueDate(''); setShowDatePicker(false); }}
@@ -538,7 +597,7 @@ export default function TodosWorkspace({ activeNoteId }) {
           </div>
 
           {/* Due Time Picker */}
-          <div className="relative">
+          <div ref={timePickerRef} className="relative">
             <button
               type="button"
               onClick={() => {
@@ -552,7 +611,7 @@ export default function TodosWorkspace({ activeNoteId }) {
             </button>
 
             {showTimePicker && (
-              <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 glass">
+              <div className="absolute left-0 mt-2 w-48 bg-white/80 dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-lg shadow-xl py-1.5 z-50 backdrop-blur-xl">
                 <button
                   type="button"
                   onClick={() => { setDueTime(''); setShowTimePicker(false); }}
@@ -636,6 +695,9 @@ export default function TodosWorkspace({ activeNoteId }) {
           </div>
         ) : (
           <div className="space-y-10 pb-20">
+            {/* Group 0: Starred */}
+            {renderGroupSection('★ Starred Tasks', groups.starred)}
+
             {/* Group 1: Overdue */}
             {renderGroupSection('⚠️ Overdue Tasks', groups.overdue)}
 

@@ -151,8 +151,10 @@ export default function Dashboard({ user, onLogout }) {
     new Set(notes.reduce((acc, note) => [...acc, ...(note.tags || [])], []))
   )
 
-  // Filter notes based on sidebar search query and selected tag
+  // Filter notes based on sidebar search query and selected tag (excluding starred notes)
   const filteredNotes = notes.filter((note) => {
+    if (note.is_starred) return false
+
     const matchesSearch = 
       (note.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (note.content || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -343,7 +345,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               ))}
               {filteredNotes.length === 0 && (
-                <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-600 font-mono py-4">
+                <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-600 font-sans py-4">
                   No matching notes.
                 </div>
               )}

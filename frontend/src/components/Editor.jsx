@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { Eye, Edit3, Tag, Plus, X, Search, FileText, CheckCircle, NotepadText, Star } from 'lucide-react'
+import { Eye, Edit3, Tag, Plus, X, Search, FileText, CheckCircle, NotepadText, Star, Check } from 'lucide-react'
 
 // Notion-style rich link preview card component
 function LinkPreviewCard({ url, noteId, activeNote, localPreviews, setLocalPreviews }) {
@@ -173,7 +173,34 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
   useEffect(() => {
     if (activeNote) {
       // Check if we are switching to a completely different note page!
-      const isNoteSwitch = lastLoadedNoteIdRef.current !== activeNote.id
+      const prevNoteId = lastLoadedNoteIdRef.current
+      const isNoteSwitch = prevNoteId && prevNoteId !== activeNote.id
+
+      if (isNoteSwitch) {
+        // Find the previous note's database state to check for unsaved edits
+        const prevNote = notes.find((n) => n.id === prevNoteId)
+        if (prevNote) {
+          const hasChanges =
+            title !== (prevNote.title || '') ||
+            content !== (prevNote.content || '') ||
+            emoji !== (prevNote.emoji || '📝') ||
+            fontFamily !== (prevNote.font_family || 'sans') ||
+            isStarred !== (prevNote.is_starred || false) ||
+            JSON.stringify(tags) !== JSON.stringify(prevNote.tags || [])
+
+          if (hasChanges) {
+            onSave(prevNoteId, {
+              title,
+              content,
+              emoji,
+              font_family: fontFamily,
+              is_starred: isStarred,
+              tags
+            })
+          }
+        }
+      }
+
       lastLoadedNoteIdRef.current = activeNote.id
 
       setTitle(activeNote.title || '')
@@ -189,34 +216,65 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
         setMode(isNewNote ? 'edit' : 'preview')
       }
     }
-  }, [activeNote])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeNote, notes])
 
-  // Debounced auto-save
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Memoized check for unsaved changes relative to the database model
+  const hasUnsavedChanges = useMemo(() => {
+    if (!activeNote) return false
+    return (
+      title !== (activeNote.title || '') ||
+      content !== (activeNote.content || '') ||
+      emoji !== (activeNote.emoji || '📝') ||
+      fontFamily !== (activeNote.font_family || 'sans') ||
+      isStarred !== (activeNote.is_starred || false) ||
+      JSON.stringify(tags) !== JSON.stringify(activeNote.tags || [])
+    )
+  }, [title, content, emoji, fontFamily, isStarred, tags, activeNote])
+
+  // Core manual save function
+  const handleManualSave = async () => {
+    if (!activeNote || isSaving) return
+    setIsSaving(true)
+    try {
+      await onSave(activeNote.id, {
+        title,
+        content,
+        emoji,
+        font_family: fontFamily,
+        is_starred: isStarred,
+        tags
+      })
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Ref hook to always let the global event listener call the latest function instance
+  const saveCallbackRef = useRef(handleManualSave)
   useEffect(() => {
-    if (!activeNote) return
+    saveCallbackRef.current = handleManualSave
+  })
 
-    const delayDebounceFn = setTimeout(() => {
-      if (
-        title !== activeNote.title ||
-        content !== activeNote.content ||
-        emoji !== activeNote.emoji ||
-        fontFamily !== activeNote.font_family ||
-        isStarred !== activeNote.is_starred ||
-        JSON.stringify(tags) !== JSON.stringify(activeNote.tags)
-      ) {
-        onSave(activeNote.id, {
-          title,
-          content,
-          emoji,
-          font_family: fontFamily,
-          is_starred: isStarred,
-          tags
-        })
+  // Keyboard listener for Ctrl+S / Meta+S
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        if (saveCallbackRef.current) {
+          saveCallbackRef.current()
+        }
       }
-    }, 800)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
-    return () => clearTimeout(delayDebounceFn)
-  }, [title, content, emoji, fontFamily, isStarred, tags])
+
 
   const getFontClass = () => {
     switch (fontFamily) {
@@ -543,6 +601,13 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
     return (n.title || '').toLowerCase().includes(linkerQuery.toLowerCase())
   })
 
+  const handleModeChange = async (newMode) => {
+    if (newMode === 'preview' && mode === 'edit' && hasUnsavedChanges) {
+      await handleManualSave()
+    }
+    setMode(newMode)
+  }
+
   if (!activeNote) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-[#191919] select-none">
@@ -570,14 +635,14 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
           {/* Edit / Preview Tabs */}
           <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 text-xs">
             <button
-              onClick={() => setMode('edit')}
+              onClick={() => handleModeChange('edit')}
               className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${mode === 'edit' ? 'bg-white dark:bg-neutral-900 text-black dark:text-white font-semibold shadow-sm' : 'text-neutral-400'}`}
             >
               <Edit3 size={13} />
               <span>Edit</span>
             </button>
             <button
-              onClick={() => setMode('preview')}
+              onClick={() => handleModeChange('preview')}
               className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${mode === 'preview' ? 'bg-white dark:bg-neutral-900 text-black dark:text-white font-semibold shadow-sm' : 'text-neutral-400'}`}
             >
               <Eye size={13} />
@@ -599,14 +664,47 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
           </div>
         </div>
 
-        {/* AI Action Button */}
-        <button
-          onClick={() => setShowAIModal(true)}
-          className="px-3.5 py-1.5 rounded-lg bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm flex-shrink-0"
-        >
-          <span className="text-[13px] leading-none select-none">✦</span>
-          <span className="hidden sm:inline">AI Assistant</span>
-        </button>
+        {/* Right side actions: Save and AI Assistant */}
+        <div className="flex items-center gap-2">
+          {/* Manual Save Button */}
+          <button
+            onClick={handleManualSave}
+            disabled={!hasUnsavedChanges || isSaving}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm flex-shrink-0 cursor-pointer ${
+              isSaving
+                ? 'bg-neutral-150 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
+                : hasUnsavedChanges
+                  ? 'bg-[#0071e3] hover:bg-[#0077ed] text-white hover:scale-[1.01]'
+                  : 'bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-400 dark:text-neutral-500'
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-neutral-300 border-t-neutral-600 rounded-full animate-spin"></div>
+                <span>Saving...</span>
+              </>
+            ) : hasUnsavedChanges ? (
+              <>
+                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
+                <span>Save</span>
+              </>
+            ) : (
+              <>
+                <Check size={13} className="text-neutral-400 dark:text-neutral-500" />
+                <span>Saved</span>
+              </>
+            )}
+          </button>
+
+          {/* AI Action Button */}
+          <button
+            onClick={() => setShowAIModal(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm flex-shrink-0"
+          >
+            <span className="text-[13px] leading-none select-none">✦</span>
+            <span className="hidden sm:inline">AI Assistant</span>
+          </button>
+        </div>
       </div>
 
       {/* Editor Body */}
@@ -621,7 +719,24 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
 
           {/* Star toggle */}
           <button
-            onClick={() => setIsStarred(!isStarred)}
+            onClick={async () => {
+              const nextStarred = !isStarred
+              setIsStarred(nextStarred)
+              if (activeNote) {
+                try {
+                  await onSave(activeNote.id, {
+                    title,
+                    content,
+                    emoji,
+                    font_family: fontFamily,
+                    is_starred: nextStarred,
+                    tags
+                  })
+                } catch (err) {
+                  console.error(err)
+                }
+              }
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 hover:bg-neutral-100/80 dark:bg-neutral-900/30 dark:hover:bg-neutral-800/80 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 text-xs font-semibold cursor-pointer transition-all duration-300 hover:scale-[1.02] shadow-xs"
           >
             <Star 
@@ -732,7 +847,7 @@ export default function Editor({ activeNote, onSave, notes = [], onNavigate }) {
                   </button>
                 ))}
                 {linkerSuggestions.length === 0 && (
-                  <div className="px-3 py-4 text-center text-xs text-neutral-400 font-mono">
+                  <div className="px-3 py-4 text-center text-xs text-neutral-400 font-sans">
                     No matching pages.
                   </div>
                 )}

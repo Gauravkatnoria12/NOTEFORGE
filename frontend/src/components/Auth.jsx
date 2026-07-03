@@ -8,6 +8,68 @@ export default function Auth({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ text: '', type: '' })
 
+  // OTP expiration timer and resend cooldown state
+  const [otpTimeLeft, setOtpTimeLeft] = useState(300)
+  const [resendCooldown, setResendCooldown] = useState(30)
+
+  // Countdown timer effect for active OTP session
+  useEffect(() => {
+    let interval = null
+    if (step === 'otp') {
+      interval = setInterval(() => {
+        setOtpTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval)
+            return 0
+          }
+          return prev - 1
+        })
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [step])
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`
+  }
+
+  // Resend OTP handler calling backend route with current email
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || loading) return
+    setLoading(true)
+    setMessage({ text: '', type: '' })
+    
+    try {
+      const response = await fetch('/api/auth/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+      let data = {}
+      try {
+        data = await response.json()
+      } catch (err) {
+        throw new Error(`Server returned invalid response (Status ${response.status}).`)
+      }
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to resend verification code.')
+      }
+
+      setMessage({ text: 'A new verification code has been sent!', type: 'success' })
+      setOtpTimeLeft(300)
+      setResendCooldown(30)
+      setOtp('')
+    } catch (err) {
+      setMessage({ text: err.message, type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const cardRef = useRef(null)
   const emailInputRef = useRef(null)
   const otpInputRef = useRef(null)
@@ -63,6 +125,8 @@ export default function Auth({ onLoginSuccess }) {
       }
 
       setMessage({ text: 'Verification code sent to email!', type: 'success' })
+      setOtpTimeLeft(300)
+      setResendCooldown(30)
       
       // Animate transitions to OTP step
       gsap.to(emailInputRef.current, {
@@ -184,22 +248,34 @@ export default function Auth({ onLoginSuccess }) {
             ) : (
               <form ref={otpInputRef} onSubmit={handleVerifyOtp} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-2">
-                    Verification Code
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                      Verification Code
+                    </label>
+                    {otpTimeLeft > 0 ? (
+                      <span className="text-xs font-sans text-[#0071e3] dark:text-[#2f97ff] font-semibold">
+                        Expires in {formatTime(otpTimeLeft)}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-red-500">
+                        Code Expired
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
                     maxLength={6}
-                    placeholder="Enter 6-digit code"
+                    disabled={otpTimeLeft === 0}
+                    placeholder={otpTimeLeft === 0 ? "Expired - please resend code" : "Enter 6-digit code"}
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-4 py-3 text-center tracking-widest text-lg font-bold rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full px-4 py-3 text-center tracking-widest text-lg font-bold rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 <button
                   type="submit"
-                  disabled={loading || otp.length !== 6}
+                  disabled={loading || otp.length !== 6 || otpTimeLeft === 0}
                   className="w-full py-3 rounded-lg bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {loading ? (
@@ -208,7 +284,7 @@ export default function Auth({ onLoginSuccess }) {
                     'Verify & Access Workspace'
                   )}
                 </button>
-                <div className="text-center">
+                <div className="flex items-center justify-between pt-2 px-1 text-xs">
                   <button
                     type="button"
                     onClick={() => {
@@ -216,17 +292,32 @@ export default function Auth({ onLoginSuccess }) {
                       setOtp('')
                       setMessage({ text: '', type: '' })
                     }}
-                    className="text-xs text-neutral-400 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                    className="text-neutral-400 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                   >
                     ← Back to Email
                   </button>
+                  
+                  {resendCooldown > 0 ? (
+                    <span className="text-neutral-400 font-sans">
+                      Resend in {resendCooldown}s
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={loading}
+                      className="text-[#0071e3] hover:text-[#005bb5] dark:text-[#2f97ff] dark:hover:text-[#0a84ff] font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Resend Code
+                    </button>
+                  )}
                 </div>
               </form>
             )}
 
             {message.text && (
               <div
-                className={`mt-4 p-3 rounded text-xs text-center border font-mono ${
+                className={`mt-4 p-3 rounded-lg text-xs text-center border font-sans ${
                   message.type === 'success'
                     ? 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400'
                     : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-950 text-red-600 dark:text-red-400'
@@ -237,7 +328,7 @@ export default function Auth({ onLoginSuccess }) {
             )}
           </div>
 
-          <div className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">
+          <div className="text-xs text-neutral-400 dark:text-neutral-500 font-sans">
             Protected by passwordless SMTP logic.
           </div>
         </div>
