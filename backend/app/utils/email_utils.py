@@ -38,6 +38,16 @@ async def send_otp_email(email_to: str, otp: str) -> bool:
     """
     message.attach(MIMEText(html_content, "html"))
     
+    # Auto-detect correct TLS parameters based on port number to prevent SSL / STARTTLS configuration mismatch errors
+    use_tls = settings.SMTP_USE_TLS
+    start_tls = settings.SMTP_START_TLS
+    if settings.SMTP_PORT == 465:
+        use_tls = True
+        start_tls = False
+    elif settings.SMTP_PORT in [587, 2525, 25]:
+        use_tls = False
+        start_tls = True
+
     try:
         await aiosmtplib.send(
             message,
@@ -45,8 +55,8 @@ async def send_otp_email(email_to: str, otp: str) -> bool:
             port=settings.SMTP_PORT,
             username=settings.SMTP_EMAIL,
             password=settings.SMTP_APP_PASSWORD,
-            use_tls=settings.SMTP_USE_TLS,
-            start_tls=settings.SMTP_START_TLS
+            use_tls=use_tls,
+            start_tls=start_tls
         )
         print(f"OTP email sent successfully to {email_to} via SMTP")
         return True
