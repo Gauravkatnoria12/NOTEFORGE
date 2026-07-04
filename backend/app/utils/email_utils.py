@@ -30,9 +30,35 @@ async def send_otp_email(email_to: str, otp: str) -> bool:
     </html>
     """
 
-    # 1. Try Resend API (HTTPS port 443) if API Key is configured.
-    # This bypasses cloud provider SMTP port blocks (25, 465, 587) entirely.
-    if settings.RESEND_API_KEY:
+    # 1. Try Brevo API (HTTPS port 443) if API Key is configured.
+    # Brevo allows sending to any recipient address right away on the free tier after verifying sender identity!
+    if settings.BREVO_API_KEY:
+        url = "https://api.brevo.com/v3/smtp/email"
+        headers = {
+            "accept": "application/json",
+            "api-key": settings.BREVO_API_KEY,
+            "content-type": "application/json"
+        }
+        from_email = settings.SMTP_EMAIL if (settings.SMTP_EMAIL and "@" in settings.SMTP_EMAIL) else "info@noteforge.com"
+        payload = {
+            "sender": {"name": "NoteForge", "email": from_email},
+            "to": [{"email": email_to}],
+            "subject": subject,
+            "htmlContent": html_content
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(url, json=payload, headers=headers, timeout=10.0)
+                if res.status_code in [200, 201, 202, 204]:
+                    print(f"OTP email sent successfully to {email_to} via Brevo API")
+                    return True
+                else:
+                    print(f"Failed to send email via Brevo API: {res.status_code} - {res.text}")
+        except Exception as e:
+            print(f"Exception sending email via Brevo API: {str(e)}")
+            # Fall through to try Resend / SMTP if Brevo fails
+
+    # 2. Try Resend API (HTTPS port 443) if API Key is configured.
         url = "https://api.resend.com/emails"
         headers = {
             "Authorization": f"Bearer {settings.RESEND_API_KEY}",
@@ -58,7 +84,7 @@ async def send_otp_email(email_to: str, otp: str) -> bool:
             print(f"Exception sending email via Resend API: {str(e)}")
             # Fall through to try SMTP if Resend fails
 
-    # 2. SMTP Fallback
+    # 3. SMTP Fallback
     if not settings.SMTP_EMAIL or not settings.SMTP_APP_PASSWORD or "@" not in settings.SMTP_EMAIL:
         print("WARNING: SMTP credentials not set or invalid. Skipping live email sending.")
         return True # Return true so UI doesn't crash in mock development mode

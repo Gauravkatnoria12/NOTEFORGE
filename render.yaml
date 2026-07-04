@@ -21,6 +21,9 @@ services:
       - key: RESEND_API_KEY
         sync: false
         placeholder: "re_your_resend_api_key_here"
+      - key: BREVO_API_KEY
+        sync: false
+        placeholder: "your_brevo_api_key_here"
       - key: FRONTEND_URL
         sync: false
         placeholder: "https://your-frontend-vercel-url.vercel.app"
