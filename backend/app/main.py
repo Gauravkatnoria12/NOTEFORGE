@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.database import db
 from app.routes import auth, notes, todos, ai
+from app.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,6 +28,12 @@ origins = [
     "http://127.0.0.1:3000"
 ]
 
+if settings.FRONTEND_URL:
+    for url in settings.FRONTEND_URL.split(","):
+        stripped = url.strip()
+        if stripped and stripped not in origins:
+            origins.append(stripped)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -41,10 +48,29 @@ app.include_router(notes.router)
 app.include_router(todos.router)
 app.include_router(ai.router)
 
-@app.get("/")
-async def root():
-    return {
-        "status": "online",
-        "app": "NoteForge API",
-        "documentation": "/docs"
-    }
+# Mount frontend static files in production if dist exists
+import os
+from fastapi.staticfiles import StaticFiles
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.dirname(current_dir)
+root_dir = os.path.dirname(backend_dir)
+
+# Check fallback directories for frontend build
+frontend_dist = os.path.join(root_dir, "frontend", "dist")
+if not os.path.exists(frontend_dist):
+    frontend_dist = os.path.join(backend_dir, "frontend_dist")
+if not os.path.exists(frontend_dist):
+    frontend_dist = os.path.join(root_dir, "frontend_dist")
+
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+    print(f"Mounted frontend static files from: {frontend_dist}")
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "status": "online",
+            "app": "NoteForge API",
+            "documentation": "/docs"
+        }

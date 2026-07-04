@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: noteforge
+    env: docker
+    plan: free
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+        placeholder: "mongodb+srv://user:pass@cluster.mongodb.net/noteforge"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SMTP_EMAIL
+        sync: false
+        placeholder: "your-email@gmail.com"
+      - key: SMTP_APP_PASSWORD
+        sync: false
+        placeholder: "your-smtp-app-password"
+      - key: GEMINI_API_KEY
+        sync: false
+        placeholder: "your-gemini-api-key"
+      - key: FRONTEND_URL
+        sync: false
+        placeholder: "https://your-frontend-vercel-url.vercel.app"
+      - key: COOKIE_SECURE
+        value: "False"
+      - key: COOKIE_SAMESITE
+        value: "lax"

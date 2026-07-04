@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from app.database import db
 from app.utils.auth import generate_otp, create_access_token, get_current_user
 from app.utils.email_utils import send_otp_email
+from app.config import settings
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -87,8 +88,8 @@ async def login(payload: LoginRequest, response: Response):
         value=token,
         httponly=True,
         max_age=30 * 24 * 60 * 60,  # 30 days persistent session
-        samesite="lax",
-        secure=False,  # Set false to support localhost development
+        samesite=settings.COOKIE_SAMESITE,
+        secure=settings.COOKIE_SECURE,
         path="/"
     )
     
