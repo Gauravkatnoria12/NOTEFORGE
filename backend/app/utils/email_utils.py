@@ -13,8 +13,10 @@ async def send_otp_email(email_to: str, otp: str) -> bool:
         print("WARNING: SMTP credentials not set or invalid. Skipping live email sending.")
         return True # Return true so UI doesn't crash in mock development mode
         
+    from_email = settings.SMTP_SENDER if settings.SMTP_SENDER else settings.SMTP_EMAIL
+    
     message = MIMEMultipart()
-    message["From"] = settings.SMTP_EMAIL
+    message["From"] = from_email
     message["To"] = email_to
     message["Subject"] = f"NoteForge - {otp} is your verification code"
     

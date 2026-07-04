@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     MONGODB_URI: str = Field(default="mongodb://localhost:27017/noteforge")
     SMTP_EMAIL: str = Field(default="")
     SMTP_APP_PASSWORD: str = Field(default="")
+    SMTP_SENDER: str = Field(default="")
     SMTP_HOST: str = Field(default="smtp.gmail.com")
     SMTP_PORT: int = Field(default=465)
     SMTP_USE_TLS: bool = Field(default=True)
