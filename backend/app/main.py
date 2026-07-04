@@ -30,7 +30,7 @@ origins = [
 
 if settings.FRONTEND_URL:
     for url in settings.FRONTEND_URL.split(","):
-        stripped = url.strip()
+        stripped = url.strip().rstrip("/")
         if stripped and stripped not in origins:
             origins.append(stripped)
 
