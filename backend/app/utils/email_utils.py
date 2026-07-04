@@ -41,11 +41,12 @@ async def send_otp_email(email_to: str, otp: str) -> bool:
     try:
         await aiosmtplib.send(
             message,
-            hostname="smtp.gmail.com",
-            port=587,
+            hostname=settings.SMTP_HOST,
+            port=settings.SMTP_PORT,
             username=settings.SMTP_EMAIL,
             password=settings.SMTP_APP_PASSWORD,
-            start_tls=True
+            use_tls=settings.SMTP_USE_TLS,
+            start_tls=settings.SMTP_START_TLS
         )
         print(f"OTP email sent successfully to {email_to}")
         return True
