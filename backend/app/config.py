@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     SMTP_START_TLS: bool = Field(default=False)
     JWT_SECRET: str = Field(default="supersecretjwtkeynoteforgemin32charactersneededhere")
     GEMINI_API_KEY: str = Field(default="")
+    RESEND_API_KEY: str = Field(default="")
     FRONTEND_URL: str = Field(default="")
     COOKIE_SECURE: bool = Field(default=False)
     COOKIE_SAMESITE: str = Field(default="lax")
